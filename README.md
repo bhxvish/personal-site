@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# bhavish — personal site
 
-## Getting Started
+Personal site for Bhavish, AI engineer. The concept is **"Measured, not asserted."** The site reads like an instrumented research notebook. Every claim carries a citation `[n]` that resolves to the repo, README or benchmark where it was measured.
 
-First, run the development server:
+Next.js 15 (App Router) · TypeScript · Tailwind v4 · GSAP + ScrollTrigger · Lenis · Framer Motion (mini) · fully static.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # production build (also runs lint + type-check)
+npm start        # serve the production build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Editing content
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+All copy lives in typed files under `content/`. You shouldn't need to touch components to update the site.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| File | What it holds |
+| --- | --- |
+| `content/site.ts` | Name, role, email, hero statement, about copy, "Into" list, "Currently" strip, socials |
+| `content/projects.ts` | Projects in display order. A project with a `caseStudy` gets a `/work/[slug]` page; one without links to its repo |
+| `content/references.ts` | The numbered citations. `metric.ref` on a project and `statement.cite` in `site.ts` point here |
+| `content/toolkit.ts` | The two marquee rows and where each tool was used |
+| `content/experience.ts` | Timeline entries |
 
-## Learn More
+Search for `TODO` to find draft copy that needs your words: `grep -rn TODO content components`.
 
-To learn more about Next.js, take a look at the following resources:
+**Add a project:** append an object to `projects` in `content/projects.ts`. For a visual, pick an existing `plate` (`legal`, `lsm`, `rag`, `gpt`, `turbofan`, `agent`). For a new one, add an SVG function to `components/work/Plate.tsx` and register it in `PLATES`. Add a `caseStudy` block to generate a full page. The template is `components/work/CaseStudy.tsx`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Add a social link:** fill in `href` in `site.socials`. Entries with an empty `href` stay hidden.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Add a portrait:** put the photo at `public/portrait.jpg` and follow the comment at the top of `components/sections/Portrait.tsx`.
 
-## Deploy on Vercel
+## Swapping fonts and colours
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Colours** are tokens in `app/globals.css` under `@theme` (`--color-ink`, `--color-paper`, `--color-signal`, …). Tailwind utilities like `bg-ink` and `text-signal` are generated from them, so a change there restyles everything. Keep `--color-signal` rare: citations, focus and live state only.
+- **Fonts** load through `next/font` in `app/layout.tsx` (self-hosted at build time). Swap `Fraunces` / `Geist` / `Geist_Mono` for any Google font and keep the CSS variable names. The share image uses static copies in `assets/fonts/`, so replace those too if you change the display face.
+- **Type scale** is the `--fs-*` variables in `app/globals.css` (fluid `clamp()` values).
+- **Motion** uses two curves, defined twice to stay in sync: `--ease-out` / `--ease-in-out` in CSS and `EASE` in `lib/gsap.ts`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## How the motion works
+
+- `components/layout/SmoothScroll.tsx` runs Lenis on GSAP's ticker and feeds ScrollTrigger.
+- `components/layout/RevealController.tsx` animates any element with `data-reveal="words|fade|clip|rule"` as it scrolls in. Server components only need the attribute. `components/ui/SplitWords.tsx` prepares masked word reveals.
+- `components/layout/Preloader.tsx` plays on the first visit to `/` only (flag in `localStorage`). Any click or key skips it.
+- `components/layout/PageTransition.tsx` handles route changes: a paper curtain rises with the destination title. Use `TransitionLink` for internal links and `AnchorLink` for home-page sections.
+- `components/hero/Hero.tsx` holds the signature moment: the `[1]` citation draws a leader line and resolves into its evidence card.
+- Everything respects `prefers-reduced-motion`. Content is never hidden without JS, and the custom cursor turns off on touch devices.
+
+## SEO
+
+Metadata and JSON-LD `Person` schema are in `app/layout.tsx`. Share images come from `app/opengraph-image.tsx` and `app/work/[slug]/opengraph-image.tsx` (template in `lib/og.tsx`). The rest: `app/icon.svg`, `app/apple-icon.tsx`, `app/sitemap.ts`, `app/robots.ts`.
+
+Set `NEXT_PUBLIC_SITE_URL` to your final domain (e.g. `https://bhavish.dev`). On Vercel it falls back to the production URL automatically.
+
+## Deploy (Vercel, zero config)
+
+1. Push this folder to a GitHub repo.
+2. Go to vercel.com/new, import the repo, keep the defaults and click Deploy.
+3. Optional: add a custom domain under *Settings → Domains* and set `NEXT_PUBLIC_SITE_URL` under *Settings → Environment Variables*, then redeploy.
+
+Or from the terminal: `npx vercel` (preview) and `npx vercel --prod`.

@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Inline the (small) stylesheet so first paint isn't blocked on a CSS request.
+  experimental: { inlineCss: true },
+  poweredByHeader: false,
 };
 
 export default nextConfig;
